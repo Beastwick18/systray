@@ -67,6 +67,8 @@ var (
 	pUnregisterClass       = u32.NewProc("UnregisterClassW")
 	pUpdateWindow          = u32.NewProc("UpdateWindow")
 
+	x32 = windows.NewLazySystemDLL("uxtheme.dll")
+
 	// ErrTrayNotReadyYet is returned by functions when they are called before the tray has been initialized.
 	ErrTrayNotReadyYet = errors.New("tray not ready yet")
 )
@@ -484,6 +486,19 @@ func (t *winTray) initInstance() error {
 		return err
 	}
 	t.window = windows.Handle(windowHandle)
+
+	pref, err := windows.GetProcAddressByOrdinal(windows.Handle(x32.Handle()), 135)
+	if err != nil {
+		return err
+	}
+	flush, err := windows.GetProcAddressByOrdinal(windows.Handle(x32.Handle()), 134)
+	if err != nil {
+		return err
+	}
+	// x32.syscal()
+	syscall.Syscall(pref, uintptr(1), 2, 0, 0)
+	syscall.Syscall(flush, uintptr(0), 0, 0, 0)
+	// pref.
 
 	pShowWindow.Call(
 		uintptr(t.window),
