@@ -12,3 +12,6 @@ out.txt
 on_exit*.txt
 .vscode
 .idea
+
+# Nix
+.direnv
