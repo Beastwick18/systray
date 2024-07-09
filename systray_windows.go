@@ -23,11 +23,11 @@ import (
 // Helpful sources: https://github.com/golang/exp/blob/master/shiny/driver/internal/win32
 
 const (
-	DEFAULT_THEME     = 0
-	ALLOW_DARK_THEME  = 1
-	FORCE_DARK_THEME  = 2
-	FORCE_LIGHT_THEME = 3
-	MAX_THEME         = 4
+	defaultTheme    = 0
+	allowDarkTheme  = 1
+	forceDarkTheme  = 2
+	forceLightTheme = 3
+	maxTheme        = 4
 )
 
 var (
@@ -75,7 +75,9 @@ var (
 	pUnregisterClass       = u32.NewProc("UnregisterClassW")
 	pUpdateWindow          = u32.NewProc("UpdateWindow")
 
-	x32 = windows.NewLazySystemDLL("uxtheme.dll")
+	x32                    = windows.NewLazySystemDLL("uxtheme.dll")
+	ordSetPreferredAppMode = 135
+	ordFlushMenuThemes     = 136
 
 	// ErrTrayNotReadyYet is returned by functions when they are called before the tray has been initialized.
 	ErrTrayNotReadyYet = errors.New("tray not ready yet")
@@ -1060,15 +1062,33 @@ func SetTooltip(tooltip string) {
 	}
 }
 
-// SetAppTheme changes the preferred app theme on windows.
-// Use DEFAULT_THEME, ALLOW_DARK_THEME, FORCE_DARK_THEME, FORCE_LIGHT_THEME, MAX_THEME
-func SetAppTheme(theme uintptr) {
-	pref, err := windows.GetProcAddressByOrdinal(windows.Handle(x32.Handle()), 135)
+func DefaultTheme() {
+	setAppTheme(defaultTheme)
+}
+
+func AllowDarkTheme() {
+	setAppTheme(allowDarkTheme)
+}
+
+func ForceLightTheme() {
+	setAppTheme(forceLightTheme)
+}
+
+func ForceDarkTheme() {
+	setAppTheme(forceDarkTheme)
+}
+
+func MaxTheme() {
+	setAppTheme(maxTheme)
+}
+
+func setAppTheme(theme uintptr) {
+	pref, err := windows.GetProcAddressByOrdinal(windows.Handle(x32.Handle()), uintptr(ordSetPreferredAppMode))
 	if err != nil {
 		log.Printf("systray error: unable to set app theme: %s\n", err)
 		return
 	}
-	flush, err := windows.GetProcAddressByOrdinal(windows.Handle(x32.Handle()), 134)
+	flush, err := windows.GetProcAddressByOrdinal(windows.Handle(x32.Handle()), uintptr(ordFlushMenuThemes))
 	if err != nil {
 		log.Printf("systray error: unable to set app theme: %s\n", err)
 		return
