@@ -22,6 +22,14 @@ import (
 
 // Helpful sources: https://github.com/golang/exp/blob/master/shiny/driver/internal/win32
 
+const (
+	DEFAULT_THEME     = 0
+	ALLOW_DARK_THEME  = 1
+	FORCE_DARK_THEME  = 2
+	FORCE_LIGHT_THEME = 3
+	MAX_THEME         = 4
+)
+
 var (
 	g32                     = windows.NewLazySystemDLL("Gdi32.dll")
 	pCreateCompatibleBitmap = g32.NewProc("CreateCompatibleBitmap")
@@ -486,19 +494,6 @@ func (t *winTray) initInstance() error {
 		return err
 	}
 	t.window = windows.Handle(windowHandle)
-
-	pref, err := windows.GetProcAddressByOrdinal(windows.Handle(x32.Handle()), 135)
-	if err != nil {
-		return err
-	}
-	flush, err := windows.GetProcAddressByOrdinal(windows.Handle(x32.Handle()), 134)
-	if err != nil {
-		return err
-	}
-	// x32.syscal()
-	syscall.Syscall(pref, uintptr(1), 2, 0, 0)
-	syscall.Syscall(flush, uintptr(0), 0, 0, 0)
-	// pref.
 
 	pShowWindow.Call(
 		uintptr(t.window),
@@ -1063,6 +1058,23 @@ func SetTooltip(tooltip string) {
 		log.Printf("systray error: unable to set tooltip: %s\n", err)
 		return
 	}
+}
+
+// SetAppTheme changes the preferred app theme on windows.
+// Use DEFAULT_THEME, ALLOW_DARK_THEME, FORCE_DARK_THEME, FORCE_LIGHT_THEME, MAX_THEME
+func SetAppTheme(theme uintptr) {
+	pref, err := windows.GetProcAddressByOrdinal(windows.Handle(x32.Handle()), 135)
+	if err != nil {
+		log.Printf("systray error: unable to set app theme: %s\n", err)
+		return
+	}
+	flush, err := windows.GetProcAddressByOrdinal(windows.Handle(x32.Handle()), 134)
+	if err != nil {
+		log.Printf("systray error: unable to set app theme: %s\n", err)
+		return
+	}
+	syscall.SyscallN(pref, theme)
+	syscall.SyscallN(flush)
 }
 
 func addOrUpdateMenuItem(item *MenuItem) {
